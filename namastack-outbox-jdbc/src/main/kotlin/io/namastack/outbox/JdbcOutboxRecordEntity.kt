@@ -1,5 +1,6 @@
 package io.namastack.outbox
 
+import io.namastack.outbox.priority.OutboxPriorityProvider
 import java.time.Instant
 
 /**
@@ -26,4 +27,5 @@ data class JdbcOutboxRecordEntity(
     val failureReason: String?,
     val nextRetryAt: Instant,
     val handlerId: String,
+    val priority: Int = OutboxPriorityProvider.DEFAULT_PRIORITY,
 )

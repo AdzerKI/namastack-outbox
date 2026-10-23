@@ -20,6 +20,7 @@ BEGIN
                 next_retry_at  TIMESTAMP WITH TIME ZONE NOT NULL,
                 partition_no   NUMBER(10) NOT NULL,
                 handler_id     VARCHAR2(1000) NOT NULL,
+                priority       NUMBER(10) DEFAULT 0 NOT NULL,
                 PRIMARY KEY (id)
             )';
         EXECUTE IMMEDIATE 'CREATE INDEX idx_outbox_rec_key_cr ON outbox_record (record_key, created_at)';

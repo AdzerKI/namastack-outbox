@@ -95,6 +95,54 @@ Records go through the following states:
 - **COMPLETED**: Successfully processed by all handlers
 - **FAILED**: Exhausted all retries, requires manual intervention
 
+### Record Priority
+
+Every record carries a `priority` (default `0`). Polling selects record keys with the highest
+priority first; keys of equal priority are selected by the age of their oldest pending record.
+Priority never reorders records of the same key: a record still waits for older records of its key.
+
+Assign priorities with `OutboxPriorityProvider` beans. A provider is invoked in the scheduling
+thread, so it can decide by payload or by thread-scoped state. This also reaches records scheduled
+by integrations such as Spring Modulith. Providers are consulted in order and the first non-null
+value wins.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin">
+
+```kotlin
+@Component
+class ReplayPriorityProvider(
+    private val replay: ReplayScope,
+) : OutboxPriorityProvider {
+    override fun provide(payload: Any): Int? = if (replay.isActive()) -1 else null
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java
+@Component
+public class ReplayPriorityProvider implements OutboxPriorityProvider {
+    private final ReplayScope replay;
+
+    public ReplayPriorityProvider(ReplayScope replay) {
+        this.replay = replay;
+    }
+
+    @Override
+    public Integer provide(Object payload) {
+        return replay.isActive() ? -1 : null;
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+A lower priority for bulk work (a replay, a backfill) keeps interactive records from waiting behind
+its backlog. Low-priority keys are still selected whenever a polling batch has free slots.
+
 ---
 
 ## OutboxEventMulticaster

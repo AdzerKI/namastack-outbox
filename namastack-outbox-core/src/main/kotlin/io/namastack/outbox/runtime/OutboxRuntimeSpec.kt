@@ -3,6 +3,7 @@ package io.namastack.outbox.runtime
 import io.micrometer.observation.ObservationRegistry
 import io.namastack.outbox.context.OutboxContextCollector
 import io.namastack.outbox.handler.OutboxHandlerInfrastructure
+import io.namastack.outbox.priority.OutboxPriorityResolver
 import java.time.Clock
 
 /**
@@ -19,6 +20,7 @@ import java.time.Clock
  * @property resources Executor and schedulers used by the runtime
  * @property clock Clock used throughout the runtime
  * @property observationRegistry Registry used for scheduled-task observations
+ * @property priorityResolver Resolver for the priority of scheduled records
  *
  * @author Roland Beisel
  * @since 1.10.0
@@ -31,4 +33,5 @@ data class OutboxRuntimeSpec(
     val resources: OutboxRuntimeResources,
     val clock: Clock,
     val observationRegistry: ObservationRegistry = ObservationRegistry.NOOP,
+    val priorityResolver: OutboxPriorityResolver = OutboxPriorityResolver.DEFAULT,
 )

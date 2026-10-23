@@ -43,6 +43,7 @@ object OutboxRuntimeFactory {
                 clock = spec.clock,
                 instrumentationSupplier = { handlers.instrumentation },
                 channelNameProviderSupplier = { handlers.channelNameProvider },
+                priorityResolver = spec.priorityResolver,
             )
         val instanceRegistry =
             OutboxInstanceRegistry(

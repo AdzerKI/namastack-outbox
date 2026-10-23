@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS outbox_record
     next_retry_at  TIMESTAMP WITH TIME ZONE NOT NULL,
     partition_no   INTEGER                  NOT NULL,
     handler_id     VARCHAR(1000)            NOT NULL,
+    priority       INT                      DEFAULT 0 NOT NULL,
     PRIMARY KEY (id)
 );
 

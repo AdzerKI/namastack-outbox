@@ -8,6 +8,8 @@ import io.namastack.outbox.context.OutboxContextCollector
 import io.namastack.outbox.handler.method.handler.GenericHandlerMethod
 import io.namastack.outbox.handler.method.handler.TypedHandlerMethod
 import io.namastack.outbox.handler.registry.OutboxHandlerRegistry
+import io.namastack.outbox.priority.OutboxPriorityProvider
+import io.namastack.outbox.priority.OutboxPriorityResolver
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -62,6 +64,30 @@ class OutboxServiceTest {
             assertThat(recordSlot.captured.key).isEqualTo(key)
             assertThat(recordSlot.captured.payload).isEqualTo(payload)
             assertThat(recordSlot.captured.handlerId).isEqualTo("handler1")
+        }
+
+        @Test
+        fun `should set priority resolved for payload`() {
+            val payload = TestPayload("test-id")
+            val handler = createTypedMockHandler("handler1")
+            val recordSlot = slot<OutboxRecord<Any>>()
+            val prioritizingService =
+                OutboxService(
+                    contextCollector = contextCollector,
+                    handlerRegistry = handlerRegistry,
+                    outboxRecordRepository = outboxRecordRepository,
+                    clock = clock,
+                    priorityResolver = OutboxPriorityResolver(listOf(OutboxPriorityProvider { -1 })),
+                )
+
+            every { contextCollector.collectContext() } returns emptyMap()
+            every { handlerRegistry.getHandlersForPayloadType(TestPayload::class) } returns listOf(handler)
+            every { handlerRegistry.getGenericHandlers(payload, any()) } returns emptyList()
+            every { outboxRecordRepository.save(capture(recordSlot)) } answers { recordSlot.captured }
+
+            prioritizingService.schedule(payload, "test-key")
+
+            assertThat(recordSlot.captured.priority).isEqualTo(-1)
         }
 
         @Test

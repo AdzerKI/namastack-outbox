@@ -27,5 +27,6 @@ class JdbcOutboxRecordEntityRowMapper : RowMapper<JdbcOutboxRecordEntity> {
             failureReason = rs.getString("failure_reason"),
             nextRetryAt = rs.getTimestamp("next_retry_at").toInstant(),
             handlerId = rs.getString("handler_id"),
+            priority = rs.getInt("priority"),
         )
 }

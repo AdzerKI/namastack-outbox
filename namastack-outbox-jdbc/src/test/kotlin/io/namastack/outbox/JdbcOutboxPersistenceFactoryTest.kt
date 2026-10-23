@@ -130,7 +130,8 @@ class JdbcOutboxPersistenceFactoryTest {
                     failure_reason VARCHAR(1000),
                     next_retry_at TIMESTAMP WITH TIME ZONE NOT NULL,
                     partition_no INTEGER NOT NULL,
-                    handler_id VARCHAR(1000) NOT NULL
+                    handler_id VARCHAR(1000) NOT NULL,
+                    priority INT DEFAULT 0 NOT NULL
                 )
                 """.trimIndent(),
             ).update()

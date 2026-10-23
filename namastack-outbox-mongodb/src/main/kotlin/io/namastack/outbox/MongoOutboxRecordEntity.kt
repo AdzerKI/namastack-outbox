@@ -1,5 +1,6 @@
 package io.namastack.outbox
 
+import io.namastack.outbox.priority.OutboxPriorityProvider
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
@@ -46,6 +47,7 @@ data class MongoOutboxRecordEntity(
     val failureReason: String?,
     val nextRetryAt: Instant,
     val handlerId: String,
+    val priority: Int = OutboxPriorityProvider.DEFAULT_PRIORITY,
 ) {
     companion object {
         const val COLLECTION_NAME = "outbox_records"

@@ -2,6 +2,7 @@ package io.namastack.outbox
 
 import io.namastack.outbox.OutboxRecordStatus.NEW
 import io.namastack.outbox.partition.PartitionHasher
+import io.namastack.outbox.priority.OutboxPriorityProvider
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -23,6 +24,7 @@ import java.util.UUID
  * @param completedAt Timestamp when processing was completed (null if not completed)
  * @param failureCount Number of times this record has failed processing
  * @param nextRetryAt Timestamp for the next retry attempt
+ * @param priority Processing priority; keys with higher priority are selected first
  *
  * @author Roland Beisel
  * @since 0.1.0
@@ -35,6 +37,7 @@ class OutboxRecord<T> internal constructor(
     val partition: Int,
     val createdAt: Instant,
     val handlerId: String,
+    val priority: Int,
     status: OutboxRecordStatus,
     completedAt: Instant?,
     failureCount: Int,
@@ -177,6 +180,7 @@ class OutboxRecord<T> internal constructor(
         private var payload: T? = null
         private var context: Map<String, String>? = null
         private var handlerId: String? = null
+        private var priority: Int = OutboxPriorityProvider.DEFAULT_PRIORITY
 
         /**
          * Sets the record key for the outbox record.
@@ -211,6 +215,14 @@ class OutboxRecord<T> internal constructor(
         fun handlerId(handlerId: String) = apply { this.handlerId = handlerId }
 
         /**
+         * Sets the processing priority for the outbox record.
+         *
+         * @param priority Processing priority; keys with higher priority are selected first
+         * @return this Builder instance for method chaining
+         */
+        fun priority(priority: Int) = apply { this.priority = priority }
+
+        /**
          * Builds the OutboxRecord with the configured values.
          *
          * @param clock Clock to use for timestamps (defaults to system UTC)
@@ -240,6 +252,7 @@ class OutboxRecord<T> internal constructor(
                 failureReason = null,
                 nextRetryAt = now,
                 handlerId = hId,
+                priority = priority,
             )
         }
     }
@@ -260,9 +273,11 @@ class OutboxRecord<T> internal constructor(
          * @param completedAt Completion timestamp
          * @param failureCount Number of failures
          * @param nextRetryAt Next retry timestamp
+         * @param priority Processing priority
          * @return Restored OutboxRecord instance
          */
         @JvmStatic
+        @JvmOverloads
         fun <T> restore(
             id: String,
             recordKey: String,
@@ -277,6 +292,7 @@ class OutboxRecord<T> internal constructor(
             partition: Int,
             nextRetryAt: Instant,
             handlerId: String,
+            priority: Int = OutboxPriorityProvider.DEFAULT_PRIORITY,
         ): OutboxRecord<T> =
             OutboxRecord(
                 id = id,
@@ -292,6 +308,7 @@ class OutboxRecord<T> internal constructor(
                 failureReason = failureReason,
                 nextRetryAt = nextRetryAt,
                 handlerId = handlerId,
+                priority = priority,
             )
     }
 }

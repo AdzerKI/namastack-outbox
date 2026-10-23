@@ -6,6 +6,7 @@ import io.namastack.outbox.handler.method.handler.OutboxHandlerMethod
 import io.namastack.outbox.handler.registry.OutboxHandlerRegistry
 import io.namastack.outbox.instrumentation.OutboxInstrumentation
 import io.namastack.outbox.instrumentation.OutboxScheduleInvocation
+import io.namastack.outbox.priority.OutboxPriorityResolver
 import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.Clock
 import java.time.Instant
@@ -64,6 +65,7 @@ import kotlin.reflect.KClass
  * @param clock Clock for timestamp generation
  * @param instrumentationSupplier Supplies instrumentation applied around each scheduling operation
  * @param channelNameProviderSupplier Supplies the provider for the logical outbox channel name
+ * @param priorityResolver Resolves the processing priority of scheduled records
  *
  * @author Roland Beisel
  * @since 0.4.0
@@ -76,6 +78,7 @@ class OutboxService(
     private val clock: Clock,
     instrumentationSupplier: () -> OutboxInstrumentation = { OutboxInstrumentation.NOOP },
     channelNameProviderSupplier: () -> OutboxChannelNameProvider = { OutboxChannelNameProvider.DEFAULT },
+    private val priorityResolver: OutboxPriorityResolver = OutboxPriorityResolver.DEFAULT,
 ) : Outbox {
     private val instrumentation: OutboxInstrumentation by lazy(instrumentationSupplier)
     private val channelNameProvider: OutboxChannelNameProvider by lazy(channelNameProviderSupplier)
@@ -471,6 +474,7 @@ class OutboxService(
 
                 // Collect context from providers and merge with additional context
                 val context = contextCollector.collectContext() + additionalContext
+                val priority = priorityResolver.resolvePriority(payload)
                 val createdAt = clock.instant()
                 val schedulingClock = Clock.fixed(createdAt, clock.zone)
 
@@ -487,6 +491,7 @@ class OutboxService(
                             .payload(payload)
                             .context(context)
                             .handlerId(handlerId)
+                            .priority(priority)
                             .build(schedulingClock)
 
                     outboxRecordRepository.save(outboxRecord)

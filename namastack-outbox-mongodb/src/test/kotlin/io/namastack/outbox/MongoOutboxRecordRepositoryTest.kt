@@ -12,6 +12,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.dropCollection
 import org.springframework.data.mongodb.core.query.Criteria
@@ -467,6 +469,24 @@ class MongoOutboxRecordRepositoryTest {
             val result = repository.findRecordKeysInPartitions(setOf(1, 2), NEW, 10, true)
 
             assertThat(result).containsExactly(recordKey1, recordKey2, recordKey3)
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = [true, false])
+        fun `orders by record priority before oldest record creation time`(stopOnFirstFailure: Boolean) {
+            val now = Instant.now(clock)
+
+            val bulkRecordKey1 = UUID.randomUUID().toString()
+            val bulkRecordKey2 = UUID.randomUUID().toString()
+            val interactiveRecordKey = UUID.randomUUID().toString()
+
+            createRecordWithPartitionAndTime(bulkRecordKey1, NEW, 1, now.minus(3, MINUTES), -1)
+            createRecordWithPartitionAndTime(bulkRecordKey2, NEW, 1, now.minus(2, MINUTES), -1)
+            createRecordWithPartitionAndTime(interactiveRecordKey, NEW, 1, now.minus(1, MINUTES))
+
+            val result = repository.findRecordKeysInPartitions(setOf(1), NEW, 10, stopOnFirstFailure)
+
+            assertThat(result).containsExactly(interactiveRecordKey, bulkRecordKey1, bulkRecordKey2)
         }
 
         @Test
@@ -957,6 +977,7 @@ class MongoOutboxRecordRepositoryTest {
         status: OutboxRecordStatus,
         partition: Int,
         createdAt: Instant,
+        priority: Int = 0,
     ): OutboxRecord<String> {
         val record =
             OutboxRecord.restore(
@@ -973,6 +994,7 @@ class MongoOutboxRecordRepositoryTest {
                 nextRetryAt = createdAt,
                 handlerId = "handlerId",
                 failureException = null,
+                priority = priority,
             )
 
         repository.save(record)

@@ -19,6 +19,8 @@ import io.namastack.outbox.instance.OutboxInstanceRepository
 import io.namastack.outbox.instrumentation.OutboxInstrumentation
 import io.namastack.outbox.partition.PartitionAssignmentCache
 import io.namastack.outbox.partition.PartitionAssignmentRepository
+import io.namastack.outbox.priority.OutboxPriorityProvider
+import io.namastack.outbox.priority.OutboxPriorityResolver
 import io.namastack.outbox.retry.OutboxRetryPolicy
 import io.namastack.outbox.retry.OutboxRetryPolicyFactory
 import io.namastack.outbox.retry.OutboxRetryPolicyRegistry
@@ -53,6 +55,13 @@ class OutboxCoreInfrastructureAutoConfiguration {
     @ConditionalOnMissingBean
     fun outboxContextCollector(providers: ObjectProvider<OutboxContextProvider>): OutboxContextCollector =
         OutboxContextCollector(
+            providersSupplier = { providers.orderedStream().toList() },
+        )
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun outboxPriorityResolver(providers: ObjectProvider<OutboxPriorityProvider>): OutboxPriorityResolver =
+        OutboxPriorityResolver(
             providersSupplier = { providers.orderedStream().toList() },
         )
 
@@ -157,6 +166,7 @@ class OutboxCoreInfrastructureAutoConfiguration {
         clock: Clock,
         instrumentations: ObjectProvider<OutboxInstrumentation>,
         channelNameProvider: ObjectProvider<OutboxChannelNameProvider>,
+        outboxPriorityResolver: OutboxPriorityResolver,
     ): Outbox =
         OutboxService(
             contextCollector = outboxContextCollector,
@@ -169,6 +179,7 @@ class OutboxCoreInfrastructureAutoConfiguration {
             channelNameProviderSupplier = {
                 channelNameProvider.getObject()
             },
+            priorityResolver = outboxPriorityResolver,
         )
 
     companion object {

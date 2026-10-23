@@ -103,6 +103,22 @@ Add the Flyway migration file to `src/main/resources/db/migration/`:
 Add the outbox table definition to your Liquibase changelog. Use the SQL schema files linked
 above as the source for the `sql` changeset type, or translate to Liquibase XML/YAML format.
 
+### Upgrading to 1.12
+
+`outbox_record` gains the column `priority` (see [Record Priority](scheduling.md#record-priority)).
+Add it to existing tables before deploying the new version:
+
+```sql
+ALTER TABLE outbox_record ADD priority INT DEFAULT 0 NOT NULL;
+```
+
+Use the column type of the schema file for your database (Oracle: `NUMBER(10)`). Existing records
+get the default priority. On MongoDB, set it on existing documents:
+
+```javascript
+db.outbox_records.updateMany({ priority: { $exists: false } }, { $set: { priority: 0 } })
+```
+
 ---
 
 ## Troubleshooting

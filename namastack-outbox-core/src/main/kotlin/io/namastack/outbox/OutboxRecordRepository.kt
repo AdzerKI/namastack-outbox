@@ -100,6 +100,9 @@ interface OutboxRecordRepository {
      * - If true: only record keys with no previous open/failed record (older.completedAt is null) are returned.
      * - If false: all record keys with pending records are returned, regardless of previous failures.
      *
+     * Implementations **must** return record keys sorted by the highest priority of their matching
+     * records descending, then by the oldest creation time of their matching records ascending.
+     *
      * @param partitions List of partition numbers to search in
      * @param status The status to filter by
      * @param batchSize Maximum number of record keys to return

@@ -96,7 +96,7 @@ internal open class JpaOutboxRecordRepository(
      * Used when ignoreRecordKeysWithPreviousFailure is true.
      */
     private val recordKeysQueryWithPreviousFailureFilter = """
-        select o.recordKey, min(o.createdAt) as minCreated
+        select o.recordKey, max(o.priority) as maxPriority, min(o.createdAt) as minCreated
         from OutboxRecordEntity o
         where o.partitionNo in :partitions
         and o.status = :status
@@ -108,7 +108,7 @@ internal open class JpaOutboxRecordRepository(
             and older.createdAt < o.createdAt
         )
         group by o.recordKey
-        order by minCreated asc
+        order by maxPriority desc, minCreated asc
     """
 
     /**
@@ -116,13 +116,13 @@ internal open class JpaOutboxRecordRepository(
      * Used when ignoreRecordKeysWithPreviousFailure is false.
      */
     private val recordKeysQueryWithoutPreviousFailureFilter = """
-        select o.recordKey, min(o.createdAt) as minCreated
+        select o.recordKey, max(o.priority) as maxPriority, min(o.createdAt) as minCreated
         from OutboxRecordEntity o
         where o.partitionNo in :partitions
         and o.status = :status
         and o.nextRetryAt <= :now
         group by o.recordKey
-        order by minCreated asc
+        order by maxPriority desc, minCreated asc
     """
 
     /**

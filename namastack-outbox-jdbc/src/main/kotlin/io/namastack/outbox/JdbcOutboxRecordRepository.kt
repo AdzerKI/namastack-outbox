@@ -39,7 +39,7 @@ internal open class JdbcOutboxRecordRepository(
         UPDATE $tableName
         SET status = :status, record_key = :recordKey, record_type = :recordType, payload = :payload, context = :context,
             partition_no = :partitionNo, created_at = :createdAt, completed_at = :completedAt, failure_count = :failureCount,
-            failure_reason = :failureReason, next_retry_at = :nextRetryAt, handler_id = :handlerId
+            failure_reason = :failureReason, next_retry_at = :nextRetryAt, handler_id = :handlerId, priority = :priority
         WHERE id = :id
         """.toSingleLine()
 
@@ -50,9 +50,9 @@ internal open class JdbcOutboxRecordRepository(
         """
         INSERT INTO $tableName
         (id, status, record_key, record_type, payload, context, partition_no,
-         created_at, completed_at, failure_count, failure_reason, next_retry_at, handler_id)
+         created_at, completed_at, failure_count, failure_reason, next_retry_at, handler_id, priority)
         VALUES (:id, :status, :recordKey, :recordType, :payload, :context, :partitionNo,
-         :createdAt, :completedAt, :failureCount, :failureReason, :nextRetryAt, :handlerId)
+         :createdAt, :completedAt, :failureCount, :failureReason, :nextRetryAt, :handlerId, :priority)
         """.toSingleLine()
 
     /**
@@ -133,7 +133,7 @@ internal open class JdbcOutboxRecordRepository(
               AND older.created_at < o.created_at
           )
         GROUP BY o.record_key
-        ORDER BY MIN(o.created_at) ASC
+        ORDER BY MAX(o.priority) DESC, MIN(o.created_at) ASC
         """.toSingleLine()
 
     /**
@@ -148,7 +148,7 @@ internal open class JdbcOutboxRecordRepository(
           AND o.status = :status
           AND o.next_retry_at <= :now
         GROUP BY o.record_key
-        ORDER BY MIN(o.created_at) ASC
+        ORDER BY MAX(o.priority) DESC, MIN(o.created_at) ASC
         """.toSingleLine()
 
     /**
@@ -497,6 +497,7 @@ internal open class JdbcOutboxRecordRepository(
             .param("failureReason", entity.failureReason)
             .param("nextRetryAt", Timestamp.from(entity.nextRetryAt))
             .param("handlerId", entity.handlerId)
+            .param("priority", entity.priority)
             .param("id", entity.id)
             .update()
 
@@ -519,6 +520,7 @@ internal open class JdbcOutboxRecordRepository(
             .param("failureReason", entity.failureReason)
             .param("nextRetryAt", Timestamp.from(entity.nextRetryAt))
             .param("handlerId", entity.handlerId)
+            .param("priority", entity.priority)
             .update()
     }
 

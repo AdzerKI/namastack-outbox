@@ -42,6 +42,7 @@ class OutboxRecordEntityMapper(
             failureReason = record.failureReason,
             nextRetryAt = record.nextRetryAt,
             handlerId = record.handlerId,
+            priority = record.priority,
         )
     }
 
@@ -80,6 +81,7 @@ class OutboxRecordEntityMapper(
             failureReason = entity.failureReason,
             nextRetryAt = entity.nextRetryAt,
             handlerId = entity.handlerId,
+            priority = entity.priority,
             failureException = null,
         )
     }

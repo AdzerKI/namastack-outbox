@@ -1,5 +1,6 @@
 package io.namastack.outbox
 
+import io.namastack.outbox.priority.OutboxPriorityProvider
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -63,4 +64,6 @@ data class OutboxRecordEntity(
     val nextRetryAt: Instant,
     @Column(name = "handler_id", nullable = false)
     val handlerId: String,
+    @Column(name = "priority", nullable = false)
+    val priority: Int = OutboxPriorityProvider.DEFAULT_PRIORITY,
 )

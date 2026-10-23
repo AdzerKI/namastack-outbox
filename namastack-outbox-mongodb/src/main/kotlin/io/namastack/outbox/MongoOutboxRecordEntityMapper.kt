@@ -37,6 +37,7 @@ class MongoOutboxRecordEntityMapper(
             failureReason = record.failureReason,
             nextRetryAt = record.nextRetryAt,
             handlerId = record.handlerId,
+            priority = record.priority,
         )
     }
 
@@ -75,6 +76,7 @@ class MongoOutboxRecordEntityMapper(
             failureReason = entity.failureReason,
             nextRetryAt = entity.nextRetryAt,
             handlerId = entity.handlerId,
+            priority = entity.priority,
             failureException = null,
         )
     }

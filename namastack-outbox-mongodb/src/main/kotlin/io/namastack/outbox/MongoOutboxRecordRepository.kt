@@ -380,7 +380,7 @@ internal open class MongoOutboxRecordRepository(
      * 2. Sort by recordKey and createdAt to prepare for grouping
      * 3. Group by recordKey, capturing the oldest record as the "blocker"
      * 4. Filter to only keys where the oldest record matches the target status and retry time
-     * 5. Order by oldest record's creation time and limit results
+     * 5. Order by oldest record's priority and creation time and limit results
      *
      * @param partitions the set of partition numbers to query
      * @param status the record status to match
@@ -418,8 +418,10 @@ internal open class MongoOutboxRecordRepository(
                     .and("oldestDoc.nextRetryAt")
                     .lte(now),
             ),
-            // Order keys by their oldest record's creation time
-            Aggregation.sort(Sort.by(Sort.Direction.ASC, "oldestDoc.createdAt")),
+            // Order keys by their oldest record's priority, then by its creation time
+            Aggregation.sort(
+                Sort.by(Sort.Order.desc("oldestDoc.priority"), Sort.Order.asc("oldestDoc.createdAt")),
+            ),
             Aggregation.limit(batchSize.toLong()),
             Aggregation
                 .project()
@@ -457,13 +459,15 @@ internal open class MongoOutboxRecordRepository(
                     .and("nextRetryAt")
                     .lte(now),
             ),
-            // Group by recordKey to get unique keys and find oldest record for sorting
+            // Group by recordKey to get unique keys, highest priority and oldest record for sorting
             Aggregation
                 .group("recordKey")
+                .max("priority")
+                .`as`("maxPriority")
                 .min("createdAt")
                 .`as`("minCreatedAt"),
-            // Order by creation time of the oldest ready record
-            Aggregation.sort(Sort.by(Sort.Direction.ASC, "minCreatedAt")),
+            // Order by highest priority, then by creation time of the oldest ready record
+            Aggregation.sort(Sort.by(Sort.Order.desc("maxPriority"), Sort.Order.asc("minCreatedAt"))),
             Aggregation.limit(batchSize.toLong()),
             Aggregation
                 .project()
